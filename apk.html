@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ethical Hacking AI</title>
+  <style>
+    body { font-family: monospace; background: #121212; color: #00ff90; margin: 0; padding: 0; }
+    #chat { padding: 20px; max-width: 800px; margin: auto; }
+    .msg { margin: 10px 0; }
+    .user { color: #00d4ff; }
+    .ai { color: #00ff90; }
+    #inputArea { position: fixed; bottom: 0; width: 100%; background: #000; padding: 10px; display: flex; gap: 10px; }
+    #userInput { flex: 1; padding: 10px; background: #1e1e1e; color: #fff; border: none; }
+    button { background: #00ff90; color: #000; padding: 10px 20px; border: none; cursor: pointer; }
+    button:hover { background: #00d479; }
+  </style>
+</head>
+<body>
+  <div id="chat"></div>
+  <div id="inputArea">
+    <input type="text" id="userInput" placeholder="Ask about ethical hacking...">
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="startVoice()">🎤</button>
+  </div>
+
+  <script>
+    const chatDiv = document.getElementById('chat');
+    const userInput = document.getElementById('userInput');
+    const apiKey = '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';
+
+    async function sendMessage() {
+      const input = userInput.value.trim();
+      if (!input) return;
+      appendMessage('user', input);
+      userInput.value = '';
+
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+          model: "gpt-4",
+          messages: [
+            { role: "system", content: "You are an expert ethical hacking assistant." },
+            { role: "user", content: input }
+          ]
+        })
+      });
+
+      const data = await res.json();
+      const reply = data.choices[0].message.content;
+      appendMessage('ai', reply);
+      speak(reply);
+    }
+
+    function appendMessage(role, text) {
+      const msg = document.createElement('div');
+      msg.className = 'msg ' + role;
+      msg.innerText = (role === 'user' ? 'You: ' : 'AI: ') + text;
+      chatDiv.appendChild(msg);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    function speak(text) {
+      const synth = window.speechSynthesis;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.voice = synth.getVoices().find(v => v.lang.includes("en"));
+      synth.speak(utter);
+    }
+
+    function startVoice() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.start();
+      recognition.onresult = function(event) {
+        userInput.value = event.results[0][0].transcript;
+        sendMessage();
+      };
+    }
+  </script>
+</body>
+</html>
